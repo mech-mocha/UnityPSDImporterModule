@@ -107,6 +107,8 @@ namespace subjectnerdagreement.psdexport
 			Channel green = (from l in layer.Channels where l.ID == 1 select l).First();
 			Channel blue = (from l in layer.Channels where l.ID == 2 select l).First();
 			Channel alpha = layer.AlphaChannel;
+            
+            if (red.ImageData == null || green.ImageData == null || blue.ImageData == null) return null;
 
 			for (int i = 0; i < pixels.Length; i++)
 			{

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -52,6 +50,7 @@ namespace subjectnerdagreement.psdexport
 				{
 					PsdFileInfo psdInfo = new PsdFileInfo(exportSettings.Psd);
 					exportSettings.LoadLayers(psdInfo);
+                    exportSettings.SetupVisibilityExportsForMultilevelGroups(ref psdInfo);
 					PSDExporter.Export(exportSettings, psdInfo);
 				}
 			}
