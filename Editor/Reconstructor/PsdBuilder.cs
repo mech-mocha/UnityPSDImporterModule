@@ -176,6 +176,12 @@ namespace subjectnerdagreement.psdexport
 					case 2:
 						posScale = 0.25f;
 						break;
+                    case 3:
+                        posScale = 0.125f;
+                        break;
+                    case 4:
+                        posScale = 0.0625f;
+                        break;
 				}
 				layerPos *= posScale;
 

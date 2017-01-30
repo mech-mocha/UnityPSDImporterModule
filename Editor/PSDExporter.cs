@@ -14,7 +14,9 @@ namespace subjectnerdagreement.psdexport
 		{
 			Default,
 			Half,
-			Quarter
+			Quarter,
+            OneEighth,
+            OneSixteenth
 		}
 
 		public static List<int> GetExportLayers(PsdExportSettings settings, PsdFileInfo fileInfo)
@@ -174,6 +176,18 @@ namespace subjectnerdagreement.psdexport
 					pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/4f);
 				}
 
+                if (layerSetting.scaleBy == ScaleDown.OneEighth)
+                {
+                    scaleLevel = 3;
+                    pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/8f);
+                }
+
+                if (layerSetting.scaleBy == ScaleDown.OneSixteenth)
+                {
+                    scaleLevel = 4;
+                    pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/16f);
+                }
+
 				// Apply scaling
 				tex = ScaleTextureByMipmap(tex, scaleLevel);
 			}
@@ -217,11 +231,27 @@ namespace subjectnerdagreement.psdexport
 
 		private static Texture2D ScaleTextureByMipmap(Texture2D tex, int mipLevel)
 		{
-			if (mipLevel < 0 || mipLevel > 2)
+			if (mipLevel < 0 || mipLevel > 4)
 				return null;
-			int width = Mathf.RoundToInt(tex.width / (mipLevel * 2));
-			int height = Mathf.RoundToInt(tex.height / (mipLevel * 2));
+            int value = 0;
 
+            switch(mipLevel)
+            {
+                case 1:
+                    value = 2;
+                    break;
+                case 2:
+                    value = 4;
+                    break;
+                case 3:
+                    value = 8;
+                    break;
+                case 4:
+                    value = 16;
+                    break;
+            }
+			int width = Mathf.RoundToInt(tex.width / (value));
+			int height = Mathf.RoundToInt(tex.height / (value));
 			// Scaling down by abusing mip maps
 			Texture2D resized = new Texture2D(width, height);
 			resized.SetPixels32(tex.GetPixels32(mipLevel));

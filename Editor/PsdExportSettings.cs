@@ -16,6 +16,8 @@ namespace subjectnerdagreement.psdexport
 		private const string TagImport1 = "ImportX1";
 		private const string TagImport2 = "ImportX2";
 		private const string TagImport4 = "ImportX4";
+        private const string TagImport8 = "ImportX8";
+        private const string TagImport16 = "ImportX16";
 		private const string TagImportAnchor = "ImportAnchor";
 		private const string TagImportPTU = "ImportPTU|";
 		private const string TagImportPack = "ImportPackTag|";
@@ -147,6 +149,10 @@ namespace subjectnerdagreement.psdexport
 					ScaleBy = 1;
 				if (label.Equals(TagImport4))
 					ScaleBy = 2;
+                if (label.Equals(TagImport8))
+                    ScaleBy = 3;
+                if (label.Equals(TagImport16))
+                    ScaleBy = 4;
 
 				if (label.StartsWith(TagImportAnchor))
 				{
@@ -207,6 +213,10 @@ namespace subjectnerdagreement.psdexport
 				labels[0] = TagImport2;
 			if (ScaleBy == 2)
 				labels[0] = TagImport4;
+            if (ScaleBy == 3)
+                labels[0] = TagImport8;
+            if (ScaleBy == 4)
+                labels[0] = TagImport16;
 
 			labels[1] = TagImportAnchor + Pivot.ToString();
 			if (Pivot == SpriteAlignment.Custom)
@@ -265,6 +275,10 @@ namespace subjectnerdagreement.psdexport
 						setting.scaleBy = PSDExporter.ScaleDown.Half;
 					if (label.Equals(TagImport4))
 						setting.scaleBy = PSDExporter.ScaleDown.Quarter;
+                    if (label.Equals(TagImport8))
+                        setting.scaleBy = PSDExporter.ScaleDown.OneEighth;
+                    if (label.Equals(TagImport16))
+                        setting.scaleBy = PSDExporter.ScaleDown.OneSixteenth;
 				} // End label loop
 
 				// Anchor is determined by import settings
@@ -313,6 +327,10 @@ namespace subjectnerdagreement.psdexport
 				labels[0] = TagImport2;
 			if (setting.scaleBy == PSDExporter.ScaleDown.Quarter)
 				labels[0] = TagImport4;
+            if (setting.scaleBy == PSDExporter.ScaleDown.OneEighth)
+                labels[0] = TagImport8;
+            if (setting.scaleBy == PSDExporter.ScaleDown.OneSixteenth)
+                labels[0] = TagImport16;
 
 			// Write the label for the texture
 			AssetDatabase.SetLabels(layerSprite, labels);
