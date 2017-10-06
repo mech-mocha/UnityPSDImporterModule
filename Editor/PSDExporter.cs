@@ -57,7 +57,7 @@ namespace subjectnerdagreement.psdexport
 					string filePath = GetLayerFilename(settings, layerIndex);
 					// If file exists, don't export
 					return !File.Exists(filePath);
-				}).ToList();	
+				}).ToList();
 			}
 
 			int exportCount = 0;
@@ -69,7 +69,7 @@ namespace subjectnerdagreement.psdexport
 				float progress = exportCount/(float) layerIndices.Count;
 
 				EditorUtility.DisplayProgressBar(fileString, infoString, progress);
-				
+
 				CreateSprite(settings, layerIndex);
 				exportCount++;
 			}
@@ -82,7 +82,7 @@ namespace subjectnerdagreement.psdexport
 		public static Sprite CreateSprite(PsdExportSettings settings, int layerIndex)
 		{
 			var layer = settings.Psd.Layers[layerIndex];
-			Texture2D tex = CreateTexture(layer);
+			Texture2D tex = CreateTexture(layer, settings.layerSettings[layerIndex].pointFilteringActive);
 			if (tex == null)
 				return null;
 			Sprite sprite = SaveAsset(settings, tex, layerIndex);
@@ -90,7 +90,7 @@ namespace subjectnerdagreement.psdexport
 			return sprite;
 		}
 
-		private static Texture2D CreateTexture(Layer layer)
+		private static Texture2D CreateTexture(Layer layer, bool pointFilteringActive)
 		{
 			if ((int)layer.Rect.width == 0 || (int)layer.Rect.height == 0)
 				return null;
@@ -101,15 +101,26 @@ namespace subjectnerdagreement.psdexport
 
 			//int textureWidth = (int) layer.Rect.width;
 			//int textureHeight = (int) layer.Rect.height;
+			Texture2D tex = null;
 
-			Texture2D tex = new Texture2D((int)layer.Rect.width, (int)layer.Rect.height, TextureFormat.RGBA32, true);
+			if (pointFilteringActive)
+			{
+				tex = new Texture2D((int)layer.Rect.width, (int)layer.Rect.height, TextureFormat.RGBA32, false);
+				tex.wrapMode = TextureWrapMode.Clamp;
+				tex.filterMode = FilterMode.Point;
+			}
+			else
+			{
+				tex = new Texture2D((int)layer.Rect.width, (int)layer.Rect.height, TextureFormat.RGBA32, true);
+			}
+
 			Color32[] pixels = new Color32[tex.width * tex.height];
 
 			Channel red = (from l in layer.Channels where l.ID == 0 select l).First();
 			Channel green = (from l in layer.Channels where l.ID == 1 select l).First();
 			Channel blue = (from l in layer.Channels where l.ID == 2 select l).First();
 			Channel alpha = layer.AlphaChannel;
-            
+
             if (red.ImageData == null || green.ImageData == null || blue.ImageData == null) return null;
 
 			for (int i = 0; i < pixels.Length; i++)
@@ -157,7 +168,9 @@ namespace subjectnerdagreement.psdexport
 			// Apply global scaling, if any
 			if (settings.ScaleBy > 0)
 			{
-				tex = ScaleTextureByMipmap(tex, settings.ScaleBy);
+				tex = settings.layerSettings[layer].pointFilteringActive ?
+					      ScaleTextureManually(tex, settings.ScaleBy) :
+					      ScaleTextureByMipmap(tex, settings.ScaleBy);
 			}
 
 			PsdExportSettings.LayerSetting layerSetting = settings.layerSettings[layer];
@@ -168,7 +181,7 @@ namespace subjectnerdagreement.psdexport
 				// By default, scale by half
 				int scaleLevel = 1;
 				pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/2f);
-				
+
 				// Setting is actually scale by quarter
 				if (layerSetting.scaleBy == ScaleDown.Quarter)
 				{
@@ -189,7 +202,7 @@ namespace subjectnerdagreement.psdexport
                 }
 
 				// Apply scaling
-				tex = ScaleTextureByMipmap(tex, scaleLevel);
+				tex = settings.layerSettings[layer].pointFilteringActive ? ScaleTextureManually(tex, scaleLevel) : ScaleTextureByMipmap(tex, scaleLevel);
 			}
 
 			byte[] buf = tex.EncodeToPNG();
@@ -233,23 +246,23 @@ namespace subjectnerdagreement.psdexport
 		{
 			if (mipLevel < 0 || mipLevel > 4)
 				return null;
-            int value = 0;
+			int value = 0;
 
-            switch(mipLevel)
-            {
-                case 1:
-                    value = 2;
-                    break;
-                case 2:
-                    value = 4;
-                    break;
-                case 3:
-                    value = 8;
-                    break;
-                case 4:
-                    value = 16;
-                    break;
-            }
+			switch(mipLevel)
+			{
+				case 1:
+					value = 2;
+					break;
+				case 2:
+					value = 4;
+					break;
+				case 3:
+					value = 8;
+					break;
+				case 4:
+					value = 16;
+					break;
+			}
 			int width = Mathf.RoundToInt(tex.width / (value));
 			int height = Mathf.RoundToInt(tex.height / (value));
 			// Scaling down by abusing mip maps
@@ -257,6 +270,63 @@ namespace subjectnerdagreement.psdexport
 			resized.SetPixels32(tex.GetPixels32(mipLevel));
 			resized.Apply();
 			return resized;
+		}
+
+		private static Texture2D ScaleTextureManually(Texture2D tex, int mipLevel)
+		{
+			if (mipLevel < 0 || mipLevel > 4)
+				return null;
+			Texture2D resized = null;
+			switch(mipLevel)
+			{
+				case 4:
+					resized = GetTextureDividedBy2(tex);
+					resized = GetTextureDividedBy2(resized);
+					resized = GetTextureDividedBy2(resized);
+					resized = GetTextureDividedBy2(resized);
+					break;
+				case 3:
+					resized = GetTextureDividedBy2(tex);
+					resized = GetTextureDividedBy2(resized);
+					resized = GetTextureDividedBy2(resized);
+					break;
+				case 2:
+					resized = GetTextureDividedBy2(tex);
+					resized = GetTextureDividedBy2(resized);
+					break;
+				case 1:
+					resized = GetTextureDividedBy2(tex);
+					break;
+				case 0:
+					resized = tex;
+					break;
+			}
+			return resized;
+		}
+
+		private static Texture2D GetTextureDividedBy2(Texture2D tex)
+		{
+			int width = Mathf.RoundToInt(tex.width / 2);
+			int height = Mathf.RoundToInt(tex.height / 2);
+			return NewBilinearFilteredTexture(width, height, tex);
+		}
+
+		private static Texture2D NewBilinearFilteredTexture(int newWidth, int newHeight, Texture2D texture2D)
+		{
+			Texture2D result = new Texture2D(newWidth, newHeight);
+			Color[] nPixels = new Color[newWidth * newHeight];
+			int k = 0;
+			for (int i = 0; i < newHeight; ++i)
+			{
+				for (int j = 0; j < newWidth; ++j)
+				{
+					nPixels[k] = texture2D.GetPixelBilinear((float)j / (float)newWidth, (float)i / (float)newHeight);
+					k++;
+				}
+			}
+			result.SetPixels(nPixels);
+			result.Apply();
+			return result;
 		}
 	}
 }

@@ -176,7 +176,7 @@ namespace subjectnerdagreement.psdexport
 		{
 			if (styleIsSetup)
 				return;
-			
+
 			icnFolder = EditorGUIUtility.FindTexture("Folder Icon");
 			icnTexture = EditorGUIUtility.FindTexture("Texture Icon");
 
@@ -222,7 +222,7 @@ namespace subjectnerdagreement.psdexport
 
 			/*
 			 * Another possible way to access the hierarchy window
-			 * 
+			 *
 			Assembly asm = typeof(UnityEditor.EditorWindow).Assembly;
 			Type wndType = asm.GetType("UnityEditor.SceneHierarchyWindow");
 			hierarchyWindow = EditorWindow.GetWindow(wndType);
@@ -353,7 +353,7 @@ namespace subjectnerdagreement.psdexport
 		{
 			if (!isDragging || selectedGroup == null)
 				return;
-			
+
 			if (selectionRect.Contains(Event.current.mousePosition))
 			{
 				DragAndDrop.visualMode = DragAndDropVisualMode.Link;
@@ -399,7 +399,7 @@ namespace subjectnerdagreement.psdexport
 			// Headers
 			using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
 			{
-				float labelSize = (position.width - (colPivot + colSize));
+				float labelSize = (position.width - (colPivot + colSize + colFiltering));
 				labelSize = Mathf.Max(labelSize, 145f);
 
 				using (new EditorGUILayout.HorizontalScope(GUILayout.Width(labelSize)))
@@ -420,6 +420,13 @@ namespace subjectnerdagreement.psdexport
 				{
 					//GUILayout.FlexibleSpace();
 					GUILayout.Label("Pivot");
+					//GUILayout.FlexibleSpace();
+				}
+
+				using (new EditorGUILayout.HorizontalScope(GUILayout.Width(colFiltering)))
+				{
+					//GUILayout.FlexibleSpace();
+					GUILayout.Label("Point Filtering");
 					//GUILayout.FlexibleSpace();
 				}
 			}
@@ -590,6 +597,7 @@ namespace subjectnerdagreement.psdexport
 		private const float colPivot = 95f;
 		private const float colVisible = 15f;
 		private const float indentSize = 20f;
+		private const float colFiltering = 120f;
 
 		private bool DrawLayerEntry(Layer layer, int layerIndex, int indentLevel, bool parentVisible)
 		{
@@ -607,7 +615,7 @@ namespace subjectnerdagreement.psdexport
 			float indentAmount = indentLevel*indentSize;
 			GUILayout.Space(indentAmount);
 
-			float labelSize = (position.width - indentAmount - (colPivot + colSize) - 50f);
+			float labelSize = (position.width - indentAmount - (colPivot + colSize + colFiltering) - 50f);
 			labelSize = Mathf.Max(labelSize, 125f);
 
 			// Draw the layer name
@@ -627,10 +635,18 @@ namespace subjectnerdagreement.psdexport
 			layerSetting.doExport = visToggle && parentVisible;
 			if (layerSetting.doExport)
 			{
-				layerSetting.scaleBy = (PSDExporter.ScaleDown)EditorGUILayout.EnumPopup(layerSetting.scaleBy,
-																			GUILayout.Width(colSize));
-				layerSetting.pivot = (SpriteAlignment)EditorGUILayout.EnumPopup(layerSetting.pivot,
-																			GUILayout.Width(colPivot));
+				layerSetting.scaleBy = (PSDExporter.ScaleDown) EditorGUILayout.EnumPopup(
+					layerSetting.scaleBy,
+					GUILayout.Width(colSize));
+				layerSetting.pivot = (SpriteAlignment) EditorGUILayout.EnumPopup(
+					layerSetting.pivot,
+					GUILayout.Width(colPivot));
+				EditorGUILayout.BeginHorizontal();
+				GUILayout.FlexibleSpace();
+				layerSetting.pointFilteringActive = EditorGUILayout.Toggle(
+					layerSetting.pointFilteringActive,
+					GUILayout.Width(colFiltering/2));
+				EditorGUILayout.EndHorizontal();
 				settings.layerSettings[layerIndex] = layerSetting;
 			}
 
@@ -820,7 +836,7 @@ namespace subjectnerdagreement.psdexport
 					GUILayout.FlexibleSpace();
 					EditorGUIUtility.labelWidth = 65f;
 					createAlign = (SpriteAlignment)EditorGUILayout.EnumPopup("Alignment", createAlign);
-					GUILayout.FlexibleSpace();	
+					GUILayout.FlexibleSpace();
 				}
 			}
 

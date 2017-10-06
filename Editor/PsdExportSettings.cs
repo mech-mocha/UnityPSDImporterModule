@@ -33,6 +33,7 @@ namespace subjectnerdagreement.psdexport
 			public bool doExport;
 			public PSDExporter.ScaleDown scaleBy;
 			public SpriteAlignment pivot;
+			public bool pointFilteringActive;
 		}
 
 		/// <summary>
@@ -358,7 +359,7 @@ namespace subjectnerdagreement.psdexport
 		{
 			string assetPath = AssetDatabase.GetAssetPath(Image);
 			string directoryPath = Path.GetDirectoryName(assetPath);
-			
+
 			string layerFile = Path.GetFileNameWithoutExtension(assetPath);
 			layerFile = string.Format("{0}_{1}.png", layerFile, layerName);
 
@@ -376,7 +377,7 @@ namespace subjectnerdagreement.psdexport
 		}
 
 
-        public void SetupVisibilityExportsForMultilevelGroups (ref PsdFileInfo fileInfo) 
+        public void SetupVisibilityExportsForMultilevelGroups (ref PsdFileInfo fileInfo)
         {
             int groupDepth = 0;
             int groupVisibleMask = 1;
