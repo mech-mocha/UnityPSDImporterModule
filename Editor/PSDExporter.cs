@@ -60,6 +60,16 @@ namespace subjectnerdagreement.psdexport
 				}).ToList();
 			}
 
+			if (object.Equals(Environment.GetEnvironmentVariable("PSD_EXPORT_ONLY_EXISTING"), "1"))
+			{
+				layerIndices = layerIndices.Where(delegate(int layerIndex)
+				{
+					string filePath = GetLayerFilename(settings, layerIndex);
+					// If file exists, only then export
+					return File.Exists(filePath);
+				}).ToList();
+			}
+
 			int exportCount = 0;
 			foreach (int layerIndex in  layerIndices)
 			{
