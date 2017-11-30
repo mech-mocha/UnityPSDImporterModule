@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using PhotoshopFile;
@@ -113,16 +114,16 @@ namespace subjectnerdagreement.psdexport
 			//int textureHeight = (int) layer.Rect.height;
 			Texture2D tex = null;
 
-			if (pointFilteringActive)
-			{
-				tex = new Texture2D((int)layer.Rect.width, (int)layer.Rect.height, TextureFormat.RGBA32, false);
-				tex.wrapMode = TextureWrapMode.Clamp;
-				tex.filterMode = FilterMode.Point;
-			}
-			else
-			{
+			//if (pointFilteringActive)
+			//{
+			//	tex = new Texture2D((int)layer.Rect.width, (int)layer.Rect.height, TextureFormat.RGBA32, false);
+			//	tex.wrapMode = TextureWrapMode.Clamp;
+			//	tex.filterMode = FilterMode.Point;
+			//}
+			//else
+			//{
 				tex = new Texture2D((int)layer.Rect.width, (int)layer.Rect.height, TextureFormat.RGBA32, true);
-			}
+			//}
 
 			Color32[] pixels = new Color32[tex.width * tex.height];
 
@@ -175,52 +176,59 @@ namespace subjectnerdagreement.psdexport
 			// Setup scaling variables
 			float pixelsToUnits = settings.PixelsToUnitSize;
 
-			// Apply global scaling, if any
-			if (settings.ScaleBy > 0)
-			{
-				tex = settings.layerSettings[layer].pointFilteringActive ?
-					      ScaleTextureManually(tex, settings.ScaleBy) :
-					      ScaleTextureByMipmap(tex, settings.ScaleBy);
-			}
+			
+			
 
 			PsdExportSettings.LayerSetting layerSetting = settings.layerSettings[layer];
-
-			// Then scale by layer scale
-			if (layerSetting.scaleBy != ScaleDown.Default)
+            int scaleBy = 1;
+            // Then scale by layer scale
+            if (layerSetting.scaleBy != ScaleDown.Default)
 			{
-				// By default, scale by half
-				int scaleLevel = 1;
-				pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/2f);
+                // By default, scale by half
 
-				// Setting is actually scale by quarter
+                scaleBy = 2;
+                pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/2f);
+				
+                // Setting is actually scale by quarter
 				if (layerSetting.scaleBy == ScaleDown.Quarter)
 				{
-					scaleLevel = 2;
+					scaleBy = 4;
 					pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/4f);
 				}
 
                 if (layerSetting.scaleBy == ScaleDown.OneEighth)
                 {
-                    scaleLevel = 3;
+                    scaleBy = 8;
                     pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/8f);
                 }
 
                 if (layerSetting.scaleBy == ScaleDown.OneSixteenth)
                 {
-                    scaleLevel = 4;
+                    scaleBy = 16;
                     pixelsToUnits = Mathf.RoundToInt(settings.PixelsToUnitSize/16f);
-                }
-
-				// Apply scaling
-				tex = settings.layerSettings[layer].pointFilteringActive ? ScaleTextureManually(tex, scaleLevel) : ScaleTextureByMipmap(tex, scaleLevel);
-			}
+                }                                   
+            }
 
 			byte[] buf = tex.EncodeToPNG();
 			File.WriteAllBytes(assetPath, buf);
 			AssetDatabase.Refresh();
-
-			// Load the texture so we can change the type
-			var textureObj = AssetDatabase.LoadAssetAtPath(assetPath, typeof(Texture2D));
+            // Apply local scaling
+            int width = (int)(((float)tex.width + 1.0f)/ (float)(scaleBy));
+            int height = (int)(((float)tex.height + 1.0f) / (float)(scaleBy));
+            if (layerSetting.scaleBy != ScaleDown.Default)
+            {
+                AssetReplicator.createSpritesUsingImageMagickFilterAndSaveInDirectory(width, height, assetPath, assetPath);
+            }
+            // Apply global scaling, if any
+            if (settings.ScaleBy > 0)
+            {
+                int nwidth = (int)(((float)width + 1.0f) / (float)(PowerConversion(settings.ScaleBy)));
+                int nheight = (int)(((float)height + 1.0f)/ (float)(PowerConversion(settings.ScaleBy)));
+                AssetReplicator.createSpritesUsingImageMagickFilterAndSaveInDirectory(nwidth, nheight, assetPath, assetPath);
+            }
+            AssetDatabase.Refresh();
+            // Load the texture so we can change the type
+            var textureObj = AssetDatabase.LoadAssetAtPath(assetPath, typeof(Texture2D));
 
 			// Get the texture importer for the asset
 			TextureImporter textureImporter = (TextureImporter)AssetImporter.GetAtPath(assetPath);
@@ -282,6 +290,26 @@ namespace subjectnerdagreement.psdexport
 			return resized;
 		}
 
+        private static int PowerConversion(int lvl) {
+            int value = 1;
+            switch (lvl)
+            {
+                case 1:
+                    value = 2;
+                    break;
+                case 2:
+                    value = 4;
+                    break;
+                case 3:
+                    value = 8;
+                    break;
+                case 4:
+                    value = 16;
+                    break;
+            }
+            return value;
+        }
+
 		private static Texture2D ScaleTextureManually(Texture2D tex, int mipLevel)
 		{
 			if (mipLevel < 0 || mipLevel > 4)
@@ -320,6 +348,10 @@ namespace subjectnerdagreement.psdexport
 			int height = Mathf.RoundToInt(tex.height / 2);
 			return NewBilinearFilteredTexture(width, height, tex);
 		}
+
+        private static void NewLanczos(int newWidth, int newHeight, Texture2D texture2D) {
+                
+        }
 
 		private static Texture2D NewBilinearFilteredTexture(int newWidth, int newHeight, Texture2D texture2D)
 		{
